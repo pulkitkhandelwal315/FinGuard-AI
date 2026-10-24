@@ -1,0 +1,15 @@
+{
+  "name": "finguard-ai",
+  "private": true,
+  "version": "1.0.0",
+  "description": "FinGuard AI - AI-Powered Financial Intelligence & Fraud Detection Platform",
+  "scripts": {
+    "test": "./run_all_tests.sh",
+    "test:backend": "pytest backend",
+    "test:frontend": "npm --prefix frontend test",
+    "dev": "./start_dev.sh",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "python3 -m uvicorn app.main:app --reload --app-dir backend --port 8000",
+    "build": "npm --prefix frontend run build"
+  }
+}
