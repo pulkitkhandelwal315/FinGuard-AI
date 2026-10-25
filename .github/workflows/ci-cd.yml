@@ -25,6 +25,8 @@ jobs:
         pip install -r backend/requirements.txt
 
     - name: Run Backend Multi-Level Test Suite
+      env:
+        FINGUARD_DB_PATH: /tmp/finguard_ci_test.db
       run: |
         PYTHONPATH=backend pytest backend/tests -v
 
