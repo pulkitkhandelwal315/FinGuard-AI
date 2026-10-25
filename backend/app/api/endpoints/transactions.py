@@ -102,6 +102,16 @@ def get_transaction_detail(txn_id: str):
 def reload_demo_dataset():
     global TRANSACTION_STORE
     TRANSACTION_STORE = demo_generator.generate_transactions(10000)
+
+    from app.services.audit_service import audit_service
+    audit_service.log_action(
+        actor="System",
+        role="ADMIN",
+        action="RELOAD_DEMO_DATASET",
+        target="TRANSACTION_STORE",
+        details="In-memory transaction store reset with 10,000 fresh synthetic records."
+    )
+
     return {
         "status": "success",
         "message": "Loaded 10,000 synthetic transaction records pre-populated with fraud scenarios.",

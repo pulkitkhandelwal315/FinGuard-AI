@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.db.repository import repo
 from app.auth.rbac import get_current_user
+from app.services.audit_service import audit_service
 
 router = APIRouter(prefix="/api/alerts", tags=["Alerts"])
 
@@ -26,6 +27,15 @@ def update_alert_status(
 ):
     new_status = payload.get("status", "RESOLVED")
     updated = repo.update_alert_status(alert_id, new_status, actor=user["name"], role=user["role"])
+
+    audit_service.log_action(
+        actor=user["name"],
+        role=user["role"],
+        action="UPDATE_ALERT_STATUS",
+        target=alert_id,
+        details=f"Alert status changed to {new_status}."
+    )
+
     if not updated:
         # Fallback response if alert was from legacy mock
         return {

@@ -1,5 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from typing import Dict, Any
 from app.ml.risk_aggregator import risk_aggregator
+from app.services.audit_service import audit_service
+from app.auth.rbac import get_current_user, require_permission, PERM_MANAGE_ML_THRESHOLDS
 
 router = APIRouter(prefix="/api/models", tags=["MLOps & Model Monitoring"])
 
@@ -80,14 +83,37 @@ def get_mlops_metrics():
     }
 
 @router.post("/thresholds")
-def update_thresholds(config: dict):
+def update_thresholds(
+    config: dict,
+    user: Dict[str, Any] = Depends(require_permission(PERM_MANAGE_ML_THRESHOLDS))
+):
+    old_thresholds = {
+        "low_risk_max": risk_aggregator.low_max,
+        "medium_risk_max": risk_aggregator.med_max,
+        "high_risk_max": risk_aggregator.high_max,
+    }
+
     if "high_risk_max" in config:
         risk_aggregator.high_max = float(config["high_risk_max"])
     if "medium_risk_max" in config:
         risk_aggregator.med_max = float(config["medium_risk_max"])
     if "low_risk_max" in config:
         risk_aggregator.low_max = float(config["low_risk_max"])
-        
+
+    new_thresholds = {
+        "low_risk_max": risk_aggregator.low_max,
+        "medium_risk_max": risk_aggregator.med_max,
+        "high_risk_max": risk_aggregator.high_max,
+    }
+
+    audit_service.log_action(
+        actor=user["name"],
+        role=user["role"],
+        action="UPDATE_ML_THRESHOLDS",
+        target="RiskAggregator",
+        details=f"Thresholds changed from {old_thresholds} to {new_thresholds}."
+    )
+
     return {
         "message": "Fraud detection risk classification thresholds updated successfully.",
         "thresholds": {

@@ -10,6 +10,7 @@ from app.ml.risk_aggregator import risk_aggregator
 from app.ml.shap_explainer import shap_explainer
 from app.db.repository import repo
 from app.auth.rbac import require_permission, PERM_EDIT_RULES, PERM_EXECUTE_BLOCK, get_current_user
+from app.services.audit_service import audit_service
 
 router = APIRouter(prefix="/api/fraud", tags=["Fraud Analytics"])
 
@@ -55,6 +56,15 @@ def create_or_update_rule(
 ):
     """Creates or updates a fraud rule with versioning. Requires ADMIN role."""
     saved_rule = repo.upsert_rule(payload, actor=user["name"], role=user["role"])
+
+    audit_service.log_action(
+        actor=user["name"],
+        role=user["role"],
+        action="CREATE_UPDATE_FRAUD_RULE",
+        target=saved_rule["rule_id"],
+        details=f"Rule {saved_rule['rule_id']} v{saved_rule['version']} activated. Payload: {payload.get('rule_name', 'unnamed')}."
+    )
+
     return {
         "message": f"Rule {saved_rule['rule_id']} v{saved_rule['version']} successfully activated.",
         "rule": saved_rule

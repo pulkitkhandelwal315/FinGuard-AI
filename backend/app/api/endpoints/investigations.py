@@ -51,6 +51,7 @@ INVESTIGATION_CASES = [
 
 from app.db.repository import repo
 from app.auth.rbac import get_current_user
+from app.services.audit_service import audit_service
 
 @router.get("")
 def get_cases(status: Optional[str] = None):
@@ -107,6 +108,13 @@ def update_case_status(
 ):
     updated = repo.update_case(case_id, payload, actor=user["name"], role=user["role"])
     if updated:
+        audit_service.log_action(
+            actor=user["name"],
+            role=user["role"],
+            action="UPDATE_INVESTIGATION_CASE",
+            target=case_id,
+            details=f"Case updated: {', '.join(f'{k}={v}' for k, v in payload.items())}."
+        )
         return {"message": "Case updated successfully", "case": updated}
 
     # Fallback for memory cases
@@ -124,6 +132,13 @@ def update_case_status(
                     "timestamp": datetime.now().isoformat()
                 })
             c["updated_at"] = datetime.now().isoformat()
+            audit_service.log_action(
+                actor=user["name"],
+                role=user["role"],
+                action="UPDATE_INVESTIGATION_CASE",
+                target=case_id,
+                details=f"Case updated (in-memory): {', '.join(f'{k}={v}' for k, v in payload.items())}."
+            )
             return {"message": "Case updated successfully", "case": c}
 
     raise HTTPException(status_code=404, detail=f"Case {case_id} not found.")
